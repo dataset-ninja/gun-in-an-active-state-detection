@@ -15,14 +15,14 @@ from dataset_tools.templates import (
 ##################################
 PROJECT_NAME: str = "Guns in an Active State Detection"
 PROJECT_NAME_FULL: str = "Guns in an Active State Detection"
-HIDE_DATASET = True  # set False when 100% sure about repo quality
+HIDE_DATASET = False  # set False when 100% sure about repo quality
 
 ##################################
 # * After uploading to instance ##
 ##################################
 LICENSE: License = License.DbCL_1_0()
 APPLICATIONS: List[Union[Industry, Domain, Research]] = [Industry.Security(is_used=False)]
-CATEGORY: Category = Category.Security(extra=Category.Surveillance())
+CATEGORY: Category = Category.Security(extra=Category.Surveillance(), sensitive_content=True)
 
 CV_TASKS: List[CVTask] = [CVTask.ObjectDetection()]
 ANNOTATION_TYPES: List[AnnotationType] = [AnnotationType.ObjectDetection()]
