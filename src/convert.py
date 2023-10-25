@@ -1,12 +1,26 @@
-import supervisely as sly
-import os
-from dataset_tools.convert import unpack_if_archive
-import src.settings as s
-from urllib.parse import unquote, urlparse
-from supervisely.io.fs import get_file_name, get_file_size
-import shutil
+# https://www.kaggle.com/datasets/ugorjiir/gun-detection
 
+import os
+import shutil
+import xml.etree.ElementTree as ET
+from urllib.parse import unquote, urlparse
+
+import numpy as np
+import supervisely as sly
+from dataset_tools.convert import unpack_if_archive
+from dotenv import load_dotenv
+from supervisely.io.fs import (
+    dir_exists,
+    file_exists,
+    get_file_ext,
+    get_file_name,
+    get_file_name_with_ext,
+    get_file_size,
+)
 from tqdm import tqdm
+
+import src.settings as s
+
 
 def download_dataset(teamfiles_dir: str) -> str:
     """Use it for large datasets to convert them on the instance"""
@@ -69,17 +83,105 @@ def count_files(path, extension):
 def convert_and_upload_supervisely_project(
     api: sly.Api, workspace_id: int, project_name: str
 ) -> sly.ProjectInfo:
-    ### Function should read local dataset and upload it to Supervisely project, then return project info.###
-    raise NotImplementedError("The converter should be implemented manually.")
 
-    # dataset_path = "/local/path/to/your/dataset" # general way
-    # dataset_path = download_dataset(teamfiles_dir) # for large datasets stored on instance
+    # project_name = "Gun Detection"
+    dataset_path = "/home/grokhi/rawdata/gun-in-an-active-state-detection/Gunmen Dataset/All"
+    batch_size = 30
+    images_ext = ".jpg"
+    ann_ext = ".txt"
+    ds_name = "ds"
 
-    # ... some code here ...
+    def create_ann(image_path):
+        labels = []
 
-    # sly.logger.info('Deleting temporary app storage files...')
-    # shutil.rmtree(storage_dir)
+        image_np = sly.imaging.image.read(image_path)[:, :, 0]
+        img_height = image_np.shape[0]
+        img_wight = image_np.shape[1]
 
-    # return project
+        ann_path = image_path[:-4] + ann_ext
+
+        if file_exists(ann_path):
+            with open(ann_path) as f:
+                content = f.read().split("\n")
+
+                for curr_data in content:
+                    if len(curr_data) != 0:
+                        curr_data = list(map(float, curr_data.split(" ")))
+                        obj_class = idx_to_class[int(curr_data[0])]
+
+                        left = int((curr_data[1] - curr_data[3] / 2) * img_wight)
+                        right = int((curr_data[1] + curr_data[3] / 2) * img_wight)
+                        top = int((curr_data[2] - curr_data[4] / 2) * img_height)
+                        bottom = int((curr_data[2] + curr_data[4] / 2) * img_height)
+                        rectangle = sly.Rectangle(top=top, left=left, bottom=bottom, right=right)
+                        label = sly.Label(rectangle, obj_class)
+                        labels.append(label)
+
+        return sly.Annotation(img_size=(img_height, img_wight), labels=labels)
+
+
+    # dog = sly.ObjClass("dog", sly.Rectangle)
+    # person = sly.ObjClass("person", sly.Rectangle)
+    # cat = sly.ObjClass("cat", sly.Rectangle)
+    # tv = sly.ObjClass("tv", sly.Rectangle)
+    # car = sly.ObjClass("car", sly.Rectangle)
+    # meatballs = sly.ObjClass("meatballs", sly.Rectangle)
+    # marinara_sauce = sly.ObjClass("marinara sauce", sly.Rectangle)
+    # tomato_soup = sly.ObjClass("tomato soup", sly.Rectangle)
+    # chicken_noodle_soup = sly.ObjClass("chicken noodle soup", sly.Rectangle)
+    # french_onion_soup = sly.ObjClass("french onion soup", sly.Rectangle)
+    # chicken_breast = sly.ObjClass("chicken breast", sly.Rectangle)
+    # ribs = sly.ObjClass("ribs", sly.Rectangle)
+    # pulled_pork = sly.ObjClass("pulled pork", sly.Rectangle)
+    # hamburger = sly.ObjClass("hamburger", sly.Rectangle)
+    # cavity = sly.ObjClass("cavity", sly.Rectangle)
+    human = sly.ObjClass("human", sly.Rectangle)
+    gun = sly.ObjClass("gun", sly.Rectangle)
+
+
+    idx_to_class = {
+        # 0: dog,
+        # 1: person,
+        # 2: cat,
+        # 3: tv,
+        # 4: car,
+        # 5: meatballs,
+        # 6: marinara_sauce,
+        # 7: tomato_soup,
+        # 8: chicken_noodle_soup,
+        # 9: french_onion_soup,
+        # 10: chicken_breast,
+        # 11: ribs,
+        # 12: pulled_pork,
+        # 13: hamburger,
+        # 14: cavity,
+        15: human,
+        16: gun,
+    }
+
+    project = api.project.create(workspace_id, project_name, change_name_if_conflict=True)
+    meta = sly.ProjectMeta(obj_classes=list(idx_to_class.values()))
+    api.project.update_meta(project.id, meta.to_json())
+
+    dataset = api.dataset.create(project.id, ds_name, change_name_if_conflict=True)
+
+    images_names = [
+        im_name for im_name in os.listdir(dataset_path) if get_file_ext(im_name) == images_ext
+    ]
+
+    progress = sly.Progress("Create dataset {}".format(ds_name), len(images_names))
+
+    for images_names_batch in sly.batched(images_names, batch_size=batch_size):
+        img_pathes_batch = [os.path.join(dataset_path, image_name) for image_name in images_names_batch]
+
+        img_infos = api.image.upload_paths(dataset.id, images_names_batch, img_pathes_batch)
+        img_ids = [im_info.id for im_info in img_infos]
+
+        anns = [create_ann(image_path) for image_path in img_pathes_batch]
+        api.annotation.upload_anns(img_ids, anns)
+
+        progress.iters_done_report(len(images_names_batch))
+    
+    return project
 
 
