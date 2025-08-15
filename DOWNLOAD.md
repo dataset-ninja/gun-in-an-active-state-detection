@@ -1,6 +1,6 @@
 Dataset **Guns in an Active State Detection** can be downloaded in [Supervisely format](https://developer.supervisely.com/api-references/supervisely-annotation-json-format):
 
- [Download](https://assets.supervisely.com/remote/eyJsaW5rIjogImZzOi8vYXNzZXRzLzI4NTRfR3VucyBpbiBhbiBBY3RpdmUgU3RhdGUgRGV0ZWN0aW9uL2d1bnMtaW4tYW4tYWN0aXZlLXN0YXRlLWRldGVjdGlvbi1EYXRhc2V0TmluamEudGFyIiwgInNpZyI6ICJnUHRwQ1FmSGJKMk9aTUlDRGpETWlzeVBHaC81WHloOStaV0xkbEUzd3F3PSJ9)
+ [Download](https://assets.supervisely.com/remote/eyJsaW5rIjogInMzOi8vc3VwZXJ2aXNlbHktZGF0YXNldHMvMjg1NF9HdW5zIGluIGFuIEFjdGl2ZSBTdGF0ZSBEZXRlY3Rpb24vZ3Vucy1pbi1hbi1hY3RpdmUtc3RhdGUtZGV0ZWN0aW9uLURhdGFzZXROaW5qYS50YXIiLCAic2lnIjogIlp4UW9jQlZVNWpCOUdRQUZvTjh1RUVvYWoxcHJsd1ovM0UwWExpRlFpNzQ9In0=?response-content-disposition=attachment%3B%20filename%3D%22guns-in-an-active-state-detection-DatasetNinja.tar%22)
 
 As an alternative, it can be downloaded with *dataset-tools* package:
 ``` bash
